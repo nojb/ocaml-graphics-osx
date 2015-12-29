@@ -26,10 +26,15 @@
     theImage = [[NSImage alloc] initWithSize: self.frame.size];
 }
 
+- (void)setColorRed:(unsigned int)r green:(unsigned int)g blue:(unsigned int)b {
+    color = [NSColor colorWithRed:(r / 255) green:(g / 255) blue:(b / 255) alpha:1.0];
+}
+
 - (void)plot:(NSPoint)point {
     currentPoint = point;
     
     [theImage lockFocus];
+    [color set];
     [[NSBezierPath bezierPathWithRect:NSMakeRect(point.x, point.y, lineWidth, lineWidth)] stroke];
     [theImage unlockFocus];
     
@@ -67,7 +72,7 @@
         
         switch (n) {
         case 0: { /* set title */
-            NSLog (@"set title\n");
+            NSLog(@"set title\n");
             if (off + 8 > max) break;
             unsigned int title_len = NSSwapBigIntToHost(*(unsigned int *)(buf + off + 4));
             if (off + 8 + title_len > max) break;
@@ -78,12 +83,20 @@
             break;
         }
         case 1: { /* plot */
-            NSLog (@"plot\n");
+            NSLog(@"plot\n");
             if (off + 12 > max) break;
             int x = NSSwapBigIntToHost(*(int *)(buf + off + 4));
             int y = NSSwapBigIntToHost(*(int *)(buf + off + 8));
             off += 12;
             [self.window.contentView plot:NSMakePoint(x, y)];
+            break;
+        }
+        case 2: { /* set color */
+            NSLog(@"set color\n");
+            if (off + 8 > max) break;
+            unsigned int rgb = NSSwapBigIntToHost(*(unsigned int *)(buf + off + 4));
+            off += 8;
+            [self.window.contentView setColorRed:((rgb >> 16) & 0xFF) green:((rgb >> 8) & 0xFF) blue:(rgb & 0xFF)];
             break;
         }
         default:

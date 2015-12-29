@@ -21,6 +21,16 @@ let flush () =
   | None -> ()
   | Some out -> flush out
 
+type color = int
+
+let rgb r g b =
+  (r lsl 16) lor (g lsl 8) lor b
+
+let set_color c =
+  output_binary_int 2;
+  output_binary_int c;
+  flush ()
+
 let plot x y =
   output_binary_int 1;
   output_binary_int x;

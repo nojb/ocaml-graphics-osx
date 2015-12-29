@@ -42,3 +42,23 @@ let set_window_title s =
   output_binary_int (String.length s);
   output_string s;
   flush ()
+
+let moveto x y =
+  output_binary_int 3;
+  output_binary_int x;
+  output_binary_int y;
+  flush ()
+
+let rmoveto x y =
+  output_binary_int 4;
+  output_binary_int x;
+  output_binary_int y;
+  flush ()
+
+let rlineto x y =
+  output_binary_int 5;
+  output_binary_int x;
+  output_binary_int y;
+  flush ()
+
+let set_line_width _ = ()

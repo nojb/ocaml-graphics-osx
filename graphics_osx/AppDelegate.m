@@ -30,6 +30,25 @@
     color = [NSColor colorWithRed:(r / 255) green:(g / 255) blue:(b / 255) alpha:1.0];
 }
 
+- (void)moveTo:(NSPoint)point {
+    currentPoint = point;
+}
+
+- (void)relativeMoveTo:(NSPoint)point {
+    currentPoint = NSMakePoint(currentPoint.x + point.x, currentPoint.y + point.y);
+}
+
+- (void)relativeLineTo:(NSPoint) point {
+    [theImage lockFocus];
+    [color set];
+    NSPoint newPoint = NSMakePoint(currentPoint.x + point.x, currentPoint.y + point.y);
+    [NSBezierPath strokeLineFromPoint:currentPoint toPoint:newPoint];
+    [theImage unlockFocus];
+    
+    currentPoint = newPoint;
+    self.needsDisplay = YES;
+}
+
 - (void)plot:(NSPoint)point {
     currentPoint = point;
     
@@ -97,6 +116,33 @@
             unsigned int rgb = NSSwapBigIntToHost(*(unsigned int *)(buf + off + 4));
             off += 8;
             [self.window.contentView setColorRed:((rgb >> 16) & 0xFF) green:((rgb >> 8) & 0xFF) blue:(rgb & 0xFF)];
+            break;
+        }
+        case 3: { /* move to */
+            NSLog(@"move to\n");
+            if (off + 12 > max) break;
+            unsigned int x = NSSwapBigIntToHost(*(unsigned int *)(buf + off + 4));
+            unsigned int y = NSSwapBigIntToHost(*(unsigned int *)(buf + off + 8));
+            off += 12;
+            [self.window.contentView moveTo:NSMakePoint(x, y)];
+            break;
+        }
+        case 4: { /* rel move to */
+            NSLog(@"rel move to\n");
+            if (off + 12 > max) break;
+            unsigned int x = NSSwapBigIntToHost(*(unsigned int *)(buf + off + 4));
+            unsigned int y = NSSwapBigIntToHost(*(unsigned int *)(buf + off + 8));
+            off += 12;
+            [self.window.contentView relativeMoveTo:NSMakePoint(x, y)];
+            break;
+        }
+        case 5: { /* rel line to */
+            NSLog(@"rel line to\n");
+            if (off + 12 > max) break;
+            unsigned int x = NSSwapBigIntToHost(*(unsigned int *)(buf + off + 4));
+            unsigned int y = NSSwapBigIntToHost(*(unsigned int *)(buf + off + 8));
+            off += 12;
+            [self.window.contentView relativeLineTo:NSMakePoint(x, y)];
             break;
         }
         default:

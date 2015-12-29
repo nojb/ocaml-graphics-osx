@@ -1,0 +1,7 @@
+*.pbxuser
+*.xcworkspace
+xcuserdata
+*.app
+_build
+*.byte
+DerivedData

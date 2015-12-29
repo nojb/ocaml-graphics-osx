@@ -21,6 +21,12 @@ let flush () =
   | None -> ()
   | Some out -> flush out
 
+let plot x y =
+  output_binary_int 1;
+  output_binary_int x;
+  output_binary_int y;
+  flush ()
+
 let set_window_title s =
   output_binary_int 0;
   output_binary_int (String.length s);

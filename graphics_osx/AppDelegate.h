@@ -8,6 +8,10 @@
 
 #import <Cocoa/Cocoa.h>
 
+@interface GraphicsView : NSView
+
+@end
+
 @interface AppDelegate : NSObject <NSApplicationDelegate>
 
 

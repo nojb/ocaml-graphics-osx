@@ -10,6 +10,29 @@
 
 #import "AppDelegate.h"
 
+@implementation GraphicsView {
+    NSBezierPath *thePath;
+}
+
+- (void)awakeFromNib {
+    NSLog (@"awakeFromNib\n");
+    thePath = [[NSBezierPath alloc] init];
+    [thePath moveToPoint:NSMakePoint (0, 0)];
+}
+
+- (void)plot:(NSPoint)point {
+    [thePath lineToPoint:point];
+    [self setNeedsDisplay:YES];
+}
+
+- (void)drawRect:(NSRect)rect
+{
+    NSLog(@"drawRect\n");
+    [thePath stroke];
+}
+
+@end
+
 @interface AppDelegate ()
 
 @property (weak) IBOutlet NSWindow *window;
@@ -29,10 +52,11 @@
     
     while (off + 4 <= max) {
         unsigned int n = NSSwapBigIntToHost(*(unsigned int *)(buf + off));
-        NSLog(@"Kind: %d\n", n);
+        NSLog(@"Kind: %d (off=%d, max=%d, len=%ld)\n", n, off, max, len);
         
         switch (n) {
         case 0: { /* set title */
+            NSLog (@"set title\n");
             if (off + 8 > max) break;
             unsigned int title_len = NSSwapBigIntToHost(*(unsigned int *)(buf + off + 4));
             if (off + 8 + title_len > max) break;
@@ -42,6 +66,15 @@
             [self.window setTitle:title];
             break;
         }
+        case 1: { /* plot */
+            NSLog (@"plot\n");
+            if (off + 12 > max) break;
+            int x = NSSwapBigIntToHost(*(int *)(buf + off + 4));
+            int y = NSSwapBigIntToHost(*(int *)(buf + off + 8));
+            off += 12;
+            [[self.window contentView] plot:NSMakePoint(x, y)];
+            break;
+        }
         default:
             NSLog(@"Unrecognized kind: %d\n", n);
             break;
@@ -49,14 +82,18 @@
     }
     
     if (off > 0) {
-        memmove(buf, buf + off, max - off);
-        max -= off;
+        if (off < max) {
+            memmove(buf, buf + off, max - off);
+            max -= off;
+        } else {
+            max = 0;
+        }
     }
 }
 
 - (void)handleInput:(NSNotification *)input {
     NSData *new_data = [input.userInfo objectForKey:NSFileHandleNotificationDataItem];
-    NSLog(@"read %ld bytes\n", [new_data length]);
+    NSLog(@"read %ld bytes (max=%d, len=%ld)\n", [new_data length], max, len);
 
     if (max + [new_data length] > len) {
         buf = realloc(buf, max + [new_data length]);

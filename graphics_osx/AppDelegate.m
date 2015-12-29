@@ -11,24 +11,35 @@
 #import "AppDelegate.h"
 
 @implementation GraphicsView {
-    NSBezierPath *thePath;
+    NSPoint currentPoint;
+    float lineWidth;
+    NSColor *color;
+    
+    NSImage *theImage;
 }
 
 - (void)awakeFromNib {
     NSLog (@"awakeFromNib\n");
-    thePath = [[NSBezierPath alloc] init];
-    [thePath moveToPoint:NSMakePoint (0, 0)];
+    currentPoint = NSZeroPoint;
+    lineWidth = 1.0;
+    color = [NSColor blackColor];
+    theImage = [[NSImage alloc] initWithSize: self.frame.size];
 }
 
 - (void)plot:(NSPoint)point {
-    [thePath lineToPoint:point];
-    [self setNeedsDisplay:YES];
+    currentPoint = point;
+    
+    [theImage lockFocus];
+    [[NSBezierPath bezierPathWithRect:NSMakeRect(point.x, point.y, lineWidth, lineWidth)] stroke];
+    [theImage unlockFocus];
+    
+    self.needsDisplay = YES;
 }
 
 - (void)drawRect:(NSRect)rect
 {
     NSLog(@"drawRect\n");
-    [thePath stroke];
+    [theImage drawAtPoint:NSZeroPoint fromRect:NSZeroRect operation:NSCompositeSourceOver fraction:1.0];
 }
 
 @end
@@ -63,7 +74,7 @@
             NSString *title =
                 [[NSString alloc] initWithBytes:(buf + off + 8) length:title_len encoding:NSUTF8StringEncoding];
             off += 8 + title_len;
-            [self.window setTitle:title];
+            self.window.title = title;
             break;
         }
         case 1: { /* plot */
@@ -72,7 +83,7 @@
             int x = NSSwapBigIntToHost(*(int *)(buf + off + 4));
             int y = NSSwapBigIntToHost(*(int *)(buf + off + 8));
             off += 12;
-            [[self.window contentView] plot:NSMakePoint(x, y)];
+            [self.window.contentView plot:NSMakePoint(x, y)];
             break;
         }
         default:

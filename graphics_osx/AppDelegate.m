@@ -18,41 +18,54 @@
 @implementation AppDelegate {
     NSFileHandle *_stdin;
     NSMutableData *_data;
+
+    char *buf;
+    unsigned long len;
+    unsigned int max;
 }
 
 - (void)processData {
-    int off = 0;
-    unsigned long len = [_data length];
-    char *bytes = (char *)[_data bytes];
+    unsigned int off = 0;
     
-    while (off + 4 <= len) {
-        unsigned int n = *(unsigned int *)(bytes + off);
-        n = NSSwapBigIntToHost(n);
-        NSLog(@"Length: %d\n", n);
+    while (off + 4 <= max) {
+        unsigned int n = NSSwapBigIntToHost(*(unsigned int *)(buf + off));
+        NSLog(@"Kind: %d\n", n);
         
-        if (off + 4 + n > len) break;
-        
-        NSData *json_data = [NSData dataWithBytes:(bytes + off + 4) length:n];
-        
-        off += 4 + n;
-        
-        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:json_data options:0 error:nil];
-        NSString *kind = [json objectForKey:@"kind"];
-        if ([kind isEqualToString:@"setTitle"]) {
-            [self.window setTitle:[json objectForKey:@"title"]];
+        switch (n) {
+        case 0: { /* set title */
+            if (off + 8 > max) break;
+            unsigned int title_len = NSSwapBigIntToHost(*(unsigned int *)(buf + off + 4));
+            if (off + 8 + title_len > max) break;
+            NSString *title =
+                [[NSString alloc] initWithBytes:(buf + off + 8) length:title_len encoding:NSUTF8StringEncoding];
+            off += 8 + title_len;
+            [self.window setTitle:title];
+            break;
+        }
+        default:
+            NSLog(@"Unrecognized kind: %d\n", n);
+            break;
         }
     }
     
     if (off > 0) {
-        memmove(bytes, bytes + off, len - off);
-        [_data setLength:(len - off)];
+        memmove(buf, buf + off, max - off);
+        max -= off;
     }
 }
 
 - (void)handleInput:(NSNotification *)input {
     NSData *new_data = [input.userInfo objectForKey:NSFileHandleNotificationDataItem];
-    NSLog(@"read %ld bytes: %@\n", (unsigned long)[new_data length], new_data);
-    [_data appendData:new_data];
+    NSLog(@"read %ld bytes\n", [new_data length]);
+
+    if (max + [new_data length] > len) {
+        buf = realloc(buf, max + [new_data length]);
+        len = max + [new_data length];
+    }
+
+    memcpy(buf + max, [new_data bytes], [new_data length]);
+    max += [new_data length];
+
     [self processData];
     [_stdin readInBackgroundAndNotify];
 }
@@ -60,8 +73,14 @@
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
     _data = [NSMutableData data];
     _stdin = [NSFileHandle fileHandleWithStandardInput];
+    buf = malloc (4096);
+    max = 0;
+    len = 4096;
     [_stdin readInBackgroundAndNotify];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleInput:) name:NSFileHandleReadCompletionNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(handleInput:)
+                                                 name:NSFileHandleReadCompletionNotification
+                                               object:nil];
 }
 
 - (void)applicationWillTerminate:(NSNotification *)aNotification {

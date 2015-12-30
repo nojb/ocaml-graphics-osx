@@ -1,12 +1,11 @@
 val open_graph : string -> unit
 
-type color = int
-
-val rgb : int -> int -> int -> color
-val set_color : color -> unit
-val plot : int -> int -> unit
 val set_window_title : string -> unit
-val moveto : int -> int -> unit
-val rmoveto : int -> int -> unit
-val rlineto : int -> int -> unit
-val set_line_width : int -> unit
+val set_color : float -> float -> float -> float -> unit
+val set_font_name : string -> unit
+val set_font_size : float -> unit
+val set_line_width : float -> unit
+val stroke_line : float -> float -> float -> float -> unit
+val stroke_rect : float -> float -> float -> float -> unit
+val stroke_oval : float -> float -> float -> float -> unit
+val stroke_arc : float -> float -> float -> float -> float -> unit

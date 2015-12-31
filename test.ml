@@ -38,31 +38,42 @@ module Turtle_osx : TURTLE = struct
   module G = Graphics_osx
 
   let pi = 4.0 *. atan 1.0
-  let deg2rad d = d /. 180.0 *. pi
+  let deg2rad d = pi *. d /. 180.0
 
   let () =
     G.open_graph ""
 
-  let theta = ref 90.0
-  let pd = ref true
-  let currx = ref 0.0
-  let curry = ref 0.0
+  type state =
+    {
+      mutable r : float;
+      mutable x : float;
+      mutable y : float;
+      mutable d : bool;
+    }
+
+  let t =
+    {
+      r = pi /. 2.0;
+      x = 0.0;
+      y = 0.0;
+      d = true;
+    }
 
   let move d =
-    let x' = !currx +. d *. cos (deg2rad !theta) in
-    let y' = !curry +. d *. sin (deg2rad !theta) in
-    if !pd then G.stroke_line !currx !curry x' y';
-    currx := x';
-    curry := y'
+    let x = t.x +. d *. cos t.r in
+    let y = t.y +. d *. sin t.r in
+    if t.d then G.stroke_line t.x t.y x y;
+    t.x <- x;
+    t.y <- y
 
-  let turn r =
-    theta := !theta -. r
+  let turn a =
+    t.r <- t.r -. deg2rad a
 
   let pendown () =
-    pd := true
+    t.d <- true
 
   let penup () =
-    pd := false
+    t.d <- false
 end
 
 module F = Fern (Turtle_osx)

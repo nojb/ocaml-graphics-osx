@@ -50,15 +50,22 @@ int ReadInt(const char *buf)
 
 @implementation GraphicsView {
     NSColor *color;
+    NSColor *backgroundColor;
     NSFont *font;
     NSImage *theImage;
 }
 
 - (void)awakeFromNib {
-    NSLog (@"awakeFromNib\n");
+    // NSLog (@"awakeFromNib\n");
     color = [NSColor blackColor];
+    backgroundColor = [NSColor whiteColor];
     font = [NSFont userFontOfSize: 0.0];
-    theImage = [[NSImage alloc] initWithSize: self.frame.size];
+    NSSize size = NSMakeSize (2 * self.frame.size.width, 2 * self.frame.size.height);
+    theImage = [[NSImage alloc] initWithSize: size];
+    [theImage lockFocus];
+    [backgroundColor set];
+    [NSBezierPath fillRect:NSMakeRect(0.0, 0.0, theImage.size.width, theImage.size.height)];
+    [theImage unlockFocus];
 }
 
 - (void)setColor:(NSColor *)c {
@@ -77,86 +84,96 @@ int ReadInt(const char *buf)
     [NSBezierPath setDefaultLineWidth:lineWidth];
 }
 
-- (void)strokeLineFromPoint:(NSPoint)from toPoint:(NSPoint)to {
+- (void)lockFocusInImage {
     [theImage lockFocus];
+}
+
+- (void)unlockFocusFromImage {
+    [theImage unlockFocus];
+}
+
+- (void)strokeLineFromPoint:(NSPoint)from toPoint:(NSPoint)to {
+    // [theImage lockFocus];
     [color set];
     [NSBezierPath strokeLineFromPoint:from toPoint:to];
-    [theImage unlockFocus];
+    // [theImage unlockFocus];
 
     self.needsDisplay = YES;
 }
 
 - (void)strokeRect:(NSRect)rect {
-    [theImage lockFocus];
+    // [theImage lockFocus];
     [color set];
     [NSBezierPath strokeRect:rect];
-    [theImage unlockFocus];
+    // [theImage unlockFocus];
 
     self.needsDisplay = YES;
 }
 
 - (void)fillRect:(NSRect)rect {
-    [theImage lockFocus];
+    // [theImage lockFocus];
     [color set];
     [NSBezierPath fillRect:rect];
-    [theImage unlockFocus];
+    // [theImage unlockFocus];
 
     self.needsDisplay = YES;
 }
 
 - (void)strokeOvalInRect:(NSRect)rect {
-    [theImage lockFocus];
+    // [theImage lockFocus];
     [color set];
     [[NSBezierPath bezierPathWithOvalInRect:rect] stroke];
-    [theImage unlockFocus];
+    // [theImage unlockFocus];
 
     self.needsDisplay = YES;
 }
 
 - (void)fillOvalInRect:(NSRect)rect {
-    [theImage lockFocus];
+    // [theImage lockFocus];
     [color set];
     [[NSBezierPath bezierPathWithOvalInRect:rect] fill];
-    [theImage unlockFocus];
+    // [theImage unlockFocus];
 
     self.needsDisplay = YES;
 }
 
 - (void)strokePoly:(NSPointArray)points count:(unsigned int)count {
-    [theImage lockFocus];
+    // [theImage lockFocus];
     [color set];
     NSBezierPath *path = [NSBezierPath bezierPath];
     [path appendBezierPathWithPoints:points count:count];
     [path stroke];
-    [theImage unlockFocus];
+    // [theImage unlockFocus];
 
     self.needsDisplay = YES;
 }
 
 - (void)drawString:(NSString *)string atPoint:(NSPoint)point {
-    [theImage lockFocus];
+    // [theImage lockFocus];
     [font set];
     [color set];
     [string drawAtPoint:point withAttributes:[NSDictionary dictionary]];
-    [theImage unlockFocus];
+    // [theImage unlockFocus];
 
     self.needsDisplay = YES;
 }
 
 - (void)strokeArcWithCenter:(NSPoint)c radius:(float)r startAngle:(float)a1 endAngle:(float)a2 {
-    [theImage lockFocus];
+    // [theImage lockFocus];
     [color set];
     NSBezierPath *path = [NSBezierPath bezierPath];
     [path appendBezierPathWithArcWithCenter:c radius:r startAngle:a1 endAngle:a2];
     [path stroke];
-    [theImage unlockFocus];
+    // [theImage unlockFocus];
 
     self.needsDisplay = YES;
 }
 
 - (void)drawRect:(NSRect)rect
 {
-    NSLog(@"drawRect\n");
+    // NSLog(@"drawRect\n");
+    // [backgroundColor set];
+    // [NSBezierPath fillRect:rect];
     [theImage drawAtPoint:NSZeroPoint fromRect:NSZeroRect operation:NSCompositeSourceOver fraction:1.0];
 }
 
@@ -178,12 +195,14 @@ int ReadInt(const char *buf)
 - (void)processData {
     unsigned int off = 0;
 
+    [self.window.contentView lockFocusInImage];
+
     while (off + 4 <= max) {
         unsigned int n = ReadInt(buf + off);
-        NSLog(@"Kind: %d (off=%d, max=%d, len=%ld)\n", n, off, max, len);
+        // NSLog(@"Kind: %d (off=%d, max=%d, len=%ld)\n", n, off, max, len);
         switch (n) {
         case 0: { /* set title */
-            NSLog(@"set title\n");
+            // NSLog(@"set title\n");
             if (off + 8 > max) break;
             unsigned int title_len = ReadInt(buf + off + 4);
             if (off + 8 + title_len > max) break;
@@ -194,7 +213,7 @@ int ReadInt(const char *buf)
             break;
         }
         case 2: { /* set color */
-            NSLog(@"set color\n");
+            // NSLog(@"set color\n");
             if (off + 4 + 8*4 > max) break;
             NSColor *c = ReadColor(buf + off + 4);
             off += 4 + 8*4;
@@ -202,7 +221,7 @@ int ReadInt(const char *buf)
             break;
         }
         case 4: { /* stroke line */
-            NSLog(@"stroke line\n");
+            // NSLog(@"stroke line\n");
             if (off + 36 > max) break;
             NSPoint p1 = ReadPoint(buf + off + 4);
             NSPoint p2 = ReadPoint(buf + off + 20);
@@ -211,7 +230,7 @@ int ReadInt(const char *buf)
             break;
         }
         case 5: { /* stroke rect */
-            NSLog(@"stroke rect\n");
+            // NSLog(@"stroke rect\n");
             if (off + 36 > max) break;
             NSRect r = ReadRect(buf + off + 4);
             off += 36;
@@ -219,7 +238,7 @@ int ReadInt(const char *buf)
             break;
         }
         case 8: { /* fill rect */
-            NSLog(@"fill rect\n");
+            // NSLog(@"fill rect\n");
             if (off + 36 > max) break;
             NSRect r = ReadRect(buf + off + 4);
             off += 36;
@@ -227,7 +246,7 @@ int ReadInt(const char *buf)
             break;
         }
         case 6: { /* stroke oval */
-            NSLog(@"stroke oval\n");
+            // NSLog(@"stroke oval\n");
             if (off + 36 > max) break;
             NSRect r = ReadRect(buf + off + 4);
             off += 36;
@@ -235,7 +254,7 @@ int ReadInt(const char *buf)
             break;
         }
         case 7: { /* fill oval */
-            NSLog(@"fill oval\n");
+            // NSLog(@"fill oval\n");
             if (off + 36 > max) break;
             NSRect r = ReadRect(buf + off + 4);
             off += 36;
@@ -243,7 +262,7 @@ int ReadInt(const char *buf)
             break;
         }
         case 9: { /* stroke poly */
-            NSLog(@"stroke poly\n");
+            // NSLog(@"stroke poly\n");
             if (off + 8 > max) break;
             unsigned int count = ReadInt(buf + off + 4);
             if (off + 8 + 16*count > max) break;
@@ -256,7 +275,7 @@ int ReadInt(const char *buf)
             break;
         }
         case 10: { /* set font name */
-            NSLog(@"set font name\n");
+            // NSLog(@"set font name\n");
             if (off + 8 > max) break;
             int n = ReadInt(buf + off + 4);
             if (off + 8 + n > max) break;
@@ -267,7 +286,7 @@ int ReadInt(const char *buf)
             break;
         }
         case 11: { /* set font size */
-            NSLog(@"set font size");
+            // NSLog(@"set font size");
             if (off + 12 > max) break;
             double size = ReadDouble(buf + off + 4);
             off += 12;
@@ -275,7 +294,7 @@ int ReadInt(const char *buf)
             break;
         }
         case 12: { /* set line width */
-            NSLog(@"set line width");
+            // NSLog(@"set line width");
             if (off + 12 > max) break;
             double size = ReadDouble(buf + off + 4);
             off += 12;
@@ -283,7 +302,7 @@ int ReadInt(const char *buf)
             break;
         }
         case 13: { /* stroke arc */
-            NSLog(@"stroke arc");
+            // NSLog(@"stroke arc");
             if (off + 4 + 8*5 > max) break;
             NSPoint c = ReadPoint(buf + 4);
             double r = ReadDouble(buf + 20);
@@ -299,6 +318,8 @@ int ReadInt(const char *buf)
         }
     }
 
+    [self.window.contentView unlockFocusFromImage];
+
     if (off > 0) {
         if (off < max) {
             memmove(buf, buf + off, max - off);
@@ -311,7 +332,7 @@ int ReadInt(const char *buf)
 
 - (void)handleInput:(NSNotification *)input {
     NSData *new_data = [input.userInfo objectForKey:NSFileHandleNotificationDataItem];
-    NSLog(@"read %ld bytes (max=%d, len=%ld)\n", [new_data length], max, len);
+    // NSLog(@"read %ld bytes (max=%d, len=%ld)\n", [new_data length], max, len);
 
     if (max + [new_data length] > len) {
         buf = realloc(buf, max + [new_data length]);
@@ -327,9 +348,9 @@ int ReadInt(const char *buf)
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
     standardInput = [NSFileHandle fileHandleWithStandardInput];
-    buf = malloc (4096);
+    buf = malloc (1024 * 128);
     max = 0;
-    len = 4096;
+    len = 1024 * 128;
     [standardInput readInBackgroundAndNotify];
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(handleInput:)

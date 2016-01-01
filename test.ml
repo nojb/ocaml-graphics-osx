@@ -7,8 +7,11 @@ end
 
 module Fern (T : TURTLE) : sig
   val fern : unit -> unit
+  val koch : int -> unit
 end = struct
   let rec fern size sign =
+    (* Printf.eprintf "fern size:%f sign:%f\n%!" size sign; *)
+    (* ignore (read_line ()); *)
     if size >= 1.0 then begin
       T.move size;
       T.turn (70.0 *. sign); fern (size *. 0.5) (-. sign); T.turn (-70.0 *. sign);
@@ -26,13 +29,55 @@ end = struct
     T.turn 90.0;
     T.pendown ();
     fern 25.0 1.0
+
+  let rec koch level size =
+    (* Unix.sleep 1; *)
+    if level = 0 then
+      T.move size
+    else begin
+      koch (level-1) (size /. 3.0);
+      T.turn 60.0;
+      koch (level-1) (size /. 3.0);
+      T.turn (-120.0);
+      koch (level-1) (size /. 3.0);
+      T.turn 60.0;
+      koch (level-1) (size /. 3.0)
+    end
+
+  let koch level =
+    T.turn 60.0;
+    koch level 500.0;
+    T.turn (-120.0);
+    koch level 500.0;
+    T.turn (-120.0);
+    koch level 500.0
 end
 
-module type GRAPHICS = sig
-  val rlineto : int -> int -> unit
-  val rmoveto : int -> int -> unit
-  val set_line_width : int -> unit
-end
+  (* [tg turn: 60]; *)
+  (*   [self KockSnowflakeSide: level size: 500]; *)
+  (*   [tg turn: -120]; *)
+  (*   [self KockSnowflakeSide: level size: 500]; *)
+  (*   [tg turn: -120]; *)
+  (*   [self KockSnowflakeSide: level size: 500]; *)
+
+(*  (void) KockSnowflakeSide: (int)level size:(double) size *)
+(* { *)
+(*     if (level == 0) *)
+(*     { *)
+(*         [tg move: size]; *)
+(*     } *)
+(*     else *)
+(*     { *)
+(*         [self KockSnowflakeSide: level-1 size: size/3]; *)
+(*         [tg turn: 60]; *)
+(*         [self KockSnowflakeSide: level-1 size: size/3]; *)
+(*         [tg turn: -120]; *)
+(*         [self KockSnowflakeSide: level-1 size: size/3]; *)
+(*         [tg turn:60]; *)
+(*         [self KockSnowflakeSide: level-1 size: size/3]; *)
+(*     } *)
+(* } *)
+
 
 module Turtle_osx : TURTLE = struct
   module G = Graphics_osx
@@ -41,12 +86,13 @@ module Turtle_osx : TURTLE = struct
   let deg2rad d = d /. 180.0 *. pi
 
   let () =
-    G.open_graph ""
+    G.open_graph "";
+    G.set_line_width 2.0
 
   let theta = ref 90.0
   let pd = ref true
-  let currx = ref 0.0
-  let curry = ref 0.0
+  let currx = ref 200.0
+  let curry = ref 200.0
 
   let move d =
     let x' = !currx +. d *. cos (deg2rad !theta) in
@@ -69,6 +115,7 @@ module F = Fern (Turtle_osx)
 
 let () =
   F.fern ();
+  (* F.koch 4; *)
   ignore (read_line ())
 
   (* G.open_graph ""; *)

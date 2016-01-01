@@ -59,6 +59,9 @@ int ReadInt(const char *buf)
     color = [NSColor blackColor];
     font = [NSFont userFontOfSize: 0.0];
     NSSize size = NSMakeSize (2 * self.frame.size.width, 2 * self.frame.size.height);
+
+    [NSBezierPath setDefaultLineCapStyle:NSRoundLineCapStyle];
+
     theImage = [[NSImage alloc] initWithSize: size];
     [theImage lockFocus];
     [[NSColor whiteColor] set];
@@ -137,7 +140,7 @@ int ReadInt(const char *buf)
 
 - (void)drawRect:(NSRect)rect
 {
-    [theImage drawAtPoint:NSZeroPoint fromRect:NSZeroRect operation:NSCompositeSourceOver fraction:1.0];
+    [theImage drawAtPoint:NSZeroPoint fromRect:rect operation:NSCompositeSourceOver fraction:1.0];
 }
 
 @end

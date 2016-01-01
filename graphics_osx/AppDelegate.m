@@ -50,7 +50,6 @@ int ReadInt(const char *buf)
 
 @implementation GraphicsView {
     NSColor *color;
-    NSColor *backgroundColor;
     NSFont *font;
     NSImage *theImage;
 }
@@ -58,12 +57,11 @@ int ReadInt(const char *buf)
 - (void)awakeFromNib {
     // NSLog (@"awakeFromNib\n");
     color = [NSColor blackColor];
-    backgroundColor = [NSColor whiteColor];
     font = [NSFont userFontOfSize: 0.0];
     NSSize size = NSMakeSize (2 * self.frame.size.width, 2 * self.frame.size.height);
     theImage = [[NSImage alloc] initWithSize: size];
     [theImage lockFocus];
-    [backgroundColor set];
+    [[NSColor whiteColor] set];
     [NSBezierPath fillRect:NSMakeRect(0.0, 0.0, theImage.size.width, theImage.size.height)];
     [theImage unlockFocus];
 }
@@ -93,87 +91,52 @@ int ReadInt(const char *buf)
 }
 
 - (void)strokeLineFromPoint:(NSPoint)from toPoint:(NSPoint)to {
-    // [theImage lockFocus];
     [color set];
     [NSBezierPath strokeLineFromPoint:from toPoint:to];
-    // [theImage unlockFocus];
-
-    self.needsDisplay = YES;
 }
 
 - (void)strokeRect:(NSRect)rect {
-    // [theImage lockFocus];
     [color set];
     [NSBezierPath strokeRect:rect];
-    // [theImage unlockFocus];
-
-    self.needsDisplay = YES;
 }
 
 - (void)fillRect:(NSRect)rect {
-    // [theImage lockFocus];
     [color set];
     [NSBezierPath fillRect:rect];
-    // [theImage unlockFocus];
-
-    self.needsDisplay = YES;
 }
 
 - (void)strokeOvalInRect:(NSRect)rect {
-    // [theImage lockFocus];
     [color set];
     [[NSBezierPath bezierPathWithOvalInRect:rect] stroke];
-    // [theImage unlockFocus];
-
-    self.needsDisplay = YES;
 }
 
 - (void)fillOvalInRect:(NSRect)rect {
-    // [theImage lockFocus];
     [color set];
     [[NSBezierPath bezierPathWithOvalInRect:rect] fill];
-    // [theImage unlockFocus];
-
-    self.needsDisplay = YES;
 }
 
 - (void)strokePoly:(NSPointArray)points count:(unsigned int)count {
-    // [theImage lockFocus];
     [color set];
     NSBezierPath *path = [NSBezierPath bezierPath];
     [path appendBezierPathWithPoints:points count:count];
     [path stroke];
-    // [theImage unlockFocus];
-
-    self.needsDisplay = YES;
 }
 
 - (void)drawString:(NSString *)string atPoint:(NSPoint)point {
-    // [theImage lockFocus];
     [font set];
     [color set];
     [string drawAtPoint:point withAttributes:[NSDictionary dictionary]];
-    // [theImage unlockFocus];
-
-    self.needsDisplay = YES;
 }
 
 - (void)strokeArcWithCenter:(NSPoint)c radius:(float)r startAngle:(float)a1 endAngle:(float)a2 {
-    // [theImage lockFocus];
     [color set];
     NSBezierPath *path = [NSBezierPath bezierPath];
     [path appendBezierPathWithArcWithCenter:c radius:r startAngle:a1 endAngle:a2];
     [path stroke];
-    // [theImage unlockFocus];
-
-    self.needsDisplay = YES;
 }
 
 - (void)drawRect:(NSRect)rect
 {
-    // NSLog(@"drawRect\n");
-    // [backgroundColor set];
-    // [NSBezierPath fillRect:rect];
     [theImage drawAtPoint:NSZeroPoint fromRect:NSZeroRect operation:NSCompositeSourceOver fraction:1.0];
 }
 
@@ -321,6 +284,8 @@ int ReadInt(const char *buf)
     [self.window.contentView unlockFocusFromImage];
 
     if (off > 0) {
+        self.window.contentView.needsDisplay = YES;
+
         if (off < max) {
             memmove(buf, buf + off, max - off);
             max -= off;

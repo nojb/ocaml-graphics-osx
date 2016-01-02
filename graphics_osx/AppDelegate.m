@@ -49,25 +49,53 @@ int ReadInt(const char *buf)
 }
 
 @implementation GraphicsView {
-    NSColor *color;
-    NSFont *font;
     NSImage *theImage;
 }
 
-- (void)awakeFromNib {
-    // NSLog (@"awakeFromNib\n");
-    color = [NSColor blackColor];
-    font = [NSFont userFontOfSize: 0.0];
-    NSSize size = NSMakeSize (2 * self.frame.size.width, 2 * self.frame.size.height);
+// - (void)awakeFromNib {
+//     // NSLog (@"awakeFromNib\n");
+//     color = [NSColor blackColor];
+//     font = [NSFont userFontOfSize: 0.0];
+//     NSSize size = NSMakeSize (2 * self.frame.size.width, 2 * self.frame.size.height);
 
-    [NSBezierPath setDefaultLineCapStyle:NSRoundLineCapStyle];
+//     [NSBezierPath setDefaultLineCapStyle:NSRoundLineCapStyle];
 
-    theImage = [[NSImage alloc] initWithSize: size];
-    [theImage lockFocus];
-    [[NSColor whiteColor] set];
-    [NSBezierPath fillRect:NSMakeRect(0.0, 0.0, theImage.size.width, theImage.size.height)];
-    [theImage unlockFocus];
+//     theImage = [[NSImage alloc] initWithSize: size];
+//     [theImage lockFocus];
+//     [[NSColor whiteColor] set];
+//     [NSBezierPath fillRect:NSMakeRect(0.0, 0.0, theImage.size.width, theImage.size.height)];
+//     [theImage unlockFocus];
+// }
+
+- (void)setImage:(NSImage *)image
+{
+    theImage = image;
 }
+
+- (void)drawRect:(NSRect)rect
+{
+    [theImage drawAtPoint:NSZeroPoint fromRect:rect operation:NSCompositeSourceOver fraction:1.0];
+}
+
+@end
+
+@interface AppDelegate ()
+
+@property (weak) IBOutlet NSWindow *window;
+@end
+
+@implementation AppDelegate {
+    NSFileHandle *standardInput;
+
+    char *buf;
+    unsigned long len;
+    unsigned int max;
+
+    NSFont *font;
+    NSColor *color;
+    NSImage *image;
+}
+
 
 - (void)setColor:(NSColor *)c {
     color = c;
@@ -83,14 +111,6 @@ int ReadInt(const char *buf)
 
 - (void)setDefaultLineWidth:(float)lineWidth {
     [NSBezierPath setDefaultLineWidth:lineWidth];
-}
-
-- (void)lockFocusInImage {
-    [theImage lockFocus];
-}
-
-- (void)unlockFocusFromImage {
-    [theImage unlockFocus];
 }
 
 - (void)strokeLineFromPoint:(NSPoint)from toPoint:(NSPoint)to {
@@ -138,30 +158,10 @@ int ReadInt(const char *buf)
     [path stroke];
 }
 
-- (void)drawRect:(NSRect)rect
-{
-    [theImage drawAtPoint:NSZeroPoint fromRect:rect operation:NSCompositeSourceOver fraction:1.0];
-}
-
-@end
-
-@interface AppDelegate ()
-
-@property (weak) IBOutlet NSWindow *window;
-@end
-
-@implementation AppDelegate {
-    NSFileHandle *standardInput;
-
-    char *buf;
-    unsigned long len;
-    unsigned int max;
-}
-
 - (void)processData {
     unsigned int off = 0;
 
-    [self.window.contentView lockFocusInImage];
+    [image lockFocus];
 
     while (off + 4 <= max) {
         unsigned int n = ReadInt(buf + off);
@@ -183,7 +183,7 @@ int ReadInt(const char *buf)
             if (off + 4 + 8*4 > max) break;
             NSColor *c = ReadColor(buf + off + 4);
             off += 4 + 8*4;
-            [self.window.contentView setColor:c];
+            [self setColor:c];
             break;
         }
         case 4: { /* stroke line */
@@ -192,7 +192,7 @@ int ReadInt(const char *buf)
             NSPoint p1 = ReadPoint(buf + off + 4);
             NSPoint p2 = ReadPoint(buf + off + 20);
             off += 36;
-            [self.window.contentView strokeLineFromPoint:p1 toPoint:p2];
+            [self strokeLineFromPoint:p1 toPoint:p2];
             break;
         }
         case 5: { /* stroke rect */
@@ -200,7 +200,7 @@ int ReadInt(const char *buf)
             if (off + 36 > max) break;
             NSRect r = ReadRect(buf + off + 4);
             off += 36;
-            [self.window.contentView strokeRect:r];
+            [self strokeRect:r];
             break;
         }
         case 8: { /* fill rect */
@@ -208,7 +208,7 @@ int ReadInt(const char *buf)
             if (off + 36 > max) break;
             NSRect r = ReadRect(buf + off + 4);
             off += 36;
-            [self.window.contentView fillRect:r];
+            [self fillRect:r];
             break;
         }
         case 6: { /* stroke oval */
@@ -216,7 +216,7 @@ int ReadInt(const char *buf)
             if (off + 36 > max) break;
             NSRect r = ReadRect(buf + off + 4);
             off += 36;
-            [self.window.contentView strokeOvalInRect:r];
+            [self strokeOvalInRect:r];
             break;
         }
         case 7: { /* fill oval */
@@ -224,7 +224,7 @@ int ReadInt(const char *buf)
             if (off + 36 > max) break;
             NSRect r = ReadRect(buf + off + 4);
             off += 36;
-            [self.window.contentView fillOvalInRect:r];
+            [self fillOvalInRect:r];
             break;
         }
         case 9: { /* stroke poly */
@@ -237,7 +237,7 @@ int ReadInt(const char *buf)
                 a[i] = ReadPoint(buf + off + 8 + 16*i);
             }
             off += 8 + 16*count;
-            [self.window.contentView strokePoly:a count:count];
+            [self strokePoly:a count:count];
             break;
         }
         case 10: { /* set font name */
@@ -248,7 +248,7 @@ int ReadInt(const char *buf)
             NSString *fontName =
                 [[NSString alloc] initWithBytes:(buf + off + 8) length:n encoding:NSUTF8StringEncoding];
             off += 8 + n;
-            [self.window.contentView setFontName:fontName];
+            [self setFontName:fontName];
             break;
         }
         case 11: { /* set font size */
@@ -256,7 +256,7 @@ int ReadInt(const char *buf)
             if (off + 12 > max) break;
             double size = ReadDouble(buf + off + 4);
             off += 12;
-            [self.window.contentView setFontSize:size];
+            [self setFontSize:size];
             break;
         }
         case 12: { /* set line width */
@@ -264,7 +264,7 @@ int ReadInt(const char *buf)
             if (off + 12 > max) break;
             double size = ReadDouble(buf + off + 4);
             off += 12;
-            [self.window.contentView setDefaultLineWidth:size];
+            [self setDefaultLineWidth:size];
             break;
         }
         case 13: { /* stroke arc */
@@ -275,7 +275,7 @@ int ReadInt(const char *buf)
             double a1 = ReadDouble(buf + 28);
             double a2 = ReadDouble(buf + 36);
             off += 4 + 8*5;
-            [self.window.contentView strokeArcWithCenter:c radius:r startAngle:a1 endAngle:a2];
+            [self strokeArcWithCenter:c radius:r startAngle:a1 endAngle:a2];
             break;
         }
         default:
@@ -284,7 +284,7 @@ int ReadInt(const char *buf)
         }
     }
 
-    [self.window.contentView unlockFocusFromImage];
+    [image unlockFocus];
 
     if (off > 0) {
         self.window.contentView.needsDisplay = YES;
@@ -300,7 +300,7 @@ int ReadInt(const char *buf)
 
 - (void)handleInput:(NSNotification *)input {
     NSData *new_data = [input.userInfo objectForKey:NSFileHandleNotificationDataItem];
-    // NSLog(@"read %ld bytes (max=%d, len=%ld)\n", [new_data length], max, len);
+    NSLog(@"read %ld bytes (max=%d, len=%ld)\n", [new_data length], max, len);
 
     if (max + [new_data length] > len) {
         buf = realloc(buf, max + [new_data length]);
@@ -315,6 +315,22 @@ int ReadInt(const char *buf)
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
+    color = [NSColor blackColor];
+    font = [NSFont userFontOfSize:0.0];
+
+    [NSBezierPath setDefaultLineCapStyle:NSRoundLineCapStyle];
+
+    image =
+        [[NSImage alloc]
+                initWithSize:NSMakeSize(2 * self.window.frame.size.width, 2 * self.window.frame.size.height)];
+
+    [image lockFocus];
+    [[NSColor whiteColor] set];
+    [NSBezierPath fillRect:NSMakeRect(0.0, 0.0, image.size.width, image.size.height)];
+    [image unlockFocus];
+
+    [self.window.contentView setImage:image];
+
     standardInput = [NSFileHandle fileHandleWithStandardInput];
     buf = malloc (1024 * 128);
     max = 0;

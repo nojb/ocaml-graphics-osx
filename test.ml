@@ -86,8 +86,7 @@ module Turtle_osx : TURTLE = struct
   let deg2rad d = pi *. d /. 180.0
 
   let () =
-    G.open_graph "";
-    G.set_line_width 2.0
+    G.open_graph ""
 
   type state =
     {

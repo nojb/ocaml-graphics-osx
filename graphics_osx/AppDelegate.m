@@ -48,19 +48,22 @@ int ReadInt(const char *buf)
     return NSSwapBigIntToHost(n);
 }
 
+@interface GraphicsView : NSView
+
+@end
+
 @implementation GraphicsView {
-    CGContextRef theImage;
+    CGContextRef bitmapContext;
 }
 
-- (void)setImage:(CGContextRef)image
-{
-    theImage = image;
+- (void)setBitmapContext:(CGContextRef)c {
+    bitmapContext = c;
 }
 
 - (void)drawRect:(NSRect)rect
 {
     CGContextRef c = [NSGraphicsContext currentContext].CGContext;
-    CGImageRef img = CGBitmapContextCreateImage(theImage);
+    CGImageRef img = CGBitmapContextCreateImage(bitmapContext);
     CGContextDrawImage(c, [self convertRectFromBacking:CGRectMake(0, 0, CGImageGetWidth(img), CGImageGetHeight(img))], img);
     CGImageRelease(img);
 }
@@ -310,7 +313,7 @@ int ReadInt(const char *buf)
     [self setColor:CGColorGetConstantColor(kCGColorBlack)];
     [self drawString:CFSTR("Hello, World") atPoint:CGPointMake(10,10)];
 
-    [self.window.contentView setImage:bitmapContext];
+    [self.window.contentView setBitmapContext:bitmapContext];
 
     standardInput = [NSFileHandle fileHandleWithStandardInput];
     buf = malloc (1024 * 128);

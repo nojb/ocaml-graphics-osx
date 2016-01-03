@@ -321,6 +321,7 @@ int ReadInt(const char *buf)
                                              selector:@selector(handleInput:)
                                                  name:NSFileHandleReadCompletionNotification
                                                object:nil];
+    [NSApp activateIgnoringOtherApps:YES];
 }
 
 - (void)applicationWillTerminate:(NSNotification *)aNotification {

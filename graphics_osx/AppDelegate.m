@@ -114,45 +114,36 @@ int ReadInt(const char *buf)
 }
 
 - (void)strokeLineFromPoint:(NSPoint)from toPoint:(NSPoint)to {
-    [color set];
     [NSBezierPath strokeLineFromPoint:from toPoint:to];
 }
 
 - (void)strokeRect:(NSRect)rect {
-    [color set];
     [NSBezierPath strokeRect:rect];
 }
 
 - (void)fillRect:(NSRect)rect {
-    [color set];
     [NSBezierPath fillRect:rect];
 }
 
 - (void)strokeOvalInRect:(NSRect)rect {
-    [color set];
     [[NSBezierPath bezierPathWithOvalInRect:rect] stroke];
 }
 
 - (void)fillOvalInRect:(NSRect)rect {
-    [color set];
     [[NSBezierPath bezierPathWithOvalInRect:rect] fill];
 }
 
 - (void)strokePoly:(NSPointArray)points count:(unsigned int)count {
-    [color set];
     NSBezierPath *path = [NSBezierPath bezierPath];
     [path appendBezierPathWithPoints:points count:count];
     [path stroke];
 }
 
 - (void)drawString:(NSString *)string atPoint:(NSPoint)point {
-    [font set];
-    [color set];
     [string drawAtPoint:point withAttributes:[NSDictionary dictionary]];
 }
 
 - (void)strokeArcWithCenter:(NSPoint)c radius:(float)r startAngle:(float)a1 endAngle:(float)a2 {
-    [color set];
     NSBezierPath *path = [NSBezierPath bezierPath];
     [path appendBezierPathWithArcWithCenter:c radius:r startAngle:a1 endAngle:a2];
     [path stroke];
@@ -162,6 +153,8 @@ int ReadInt(const char *buf)
     unsigned int off = 0;
 
     [image lockFocus];
+    [color set];
+    [font set];
 
     while (off + 4 <= max) {
         unsigned int n = ReadInt(buf + off);

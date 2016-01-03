@@ -254,7 +254,7 @@ int ReadInt(const char *buf)
         case 11: { /* set font size */
             // NSLog(@"set font size");
             if (off + 12 > max) break;
-            double size = ReadDouble(buf + off + 4);
+            CGFloat size = ReadDouble(buf + off + 4);
             off += 12;
             [self setFontSize:size];
             break;
@@ -262,7 +262,7 @@ int ReadInt(const char *buf)
         case 12: { /* set line width */
             // NSLog(@"set line width");
             if (off + 12 > max) break;
-            double size = ReadDouble(buf + off + 4);
+            CGFloat size = ReadDouble(buf + off + 4);
             off += 12;
             [self setDefaultLineWidth:size];
             break;
@@ -271,9 +271,9 @@ int ReadInt(const char *buf)
             // NSLog(@"stroke arc");
             if (off + 4 + 8*5 > max) break;
             NSPoint c = ReadPoint(buf + 4);
-            double r = ReadDouble(buf + 20);
-            double a1 = ReadDouble(buf + 28);
-            double a2 = ReadDouble(buf + 36);
+            CGFloat r = ReadDouble(buf + 20);
+            CGFloat a1 = ReadDouble(buf + 28);
+            CGFloat a2 = ReadDouble(buf + 36);
             off += 4 + 8*5;
             [self strokeArcWithCenter:c radius:r startAngle:a1 endAngle:a2];
             break;

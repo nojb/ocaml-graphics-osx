@@ -10,36 +10,36 @@
 
 #import "AppDelegate.h"
 
-double ReadDouble(const char *buf)
+CGFloat ReadDouble(const char *buf)
 {
     unsigned long long d = *(unsigned long long *)buf;
     d = NSSwapBigLongLongToHost(d);
     return *(double *)&d;
 }
 
-NSColor *ReadColor(const char *buf)
+CGColorRef ReadColor(const char *buf)
 {
-   double r = ReadDouble(buf);
-   double g = ReadDouble(buf + 8);
-   double b = ReadDouble(buf + 16);
-   double a = ReadDouble(buf + 24);
-   return [NSColor colorWithCalibratedRed:r green:g blue:b alpha:a];
+   CGFloat r = ReadDouble(buf);
+   CGFloat g = ReadDouble(buf + 8);
+   CGFloat b = ReadDouble(buf + 16);
+   CGFloat a = ReadDouble(buf + 24);
+   return CGColorCreateGenericRGB(r, g, b, a);
 }
 
-NSPoint ReadPoint(const char *buf)
+CGPoint ReadPoint(const char *buf)
 {
-    double x = ReadDouble(buf);
-    double y = ReadDouble(buf + 8);
-    return NSMakePoint(x, y);
+    CGFloat x = ReadDouble(buf);
+    CGFloat y = ReadDouble(buf + 8);
+    return CGPointMake(x, y);
 }
 
-NSRect ReadRect(const char *buf)
+CGRect ReadRect(const char *buf)
 {
-    double x = ReadDouble(buf);
-    double y = ReadDouble(buf + 8);
-    double w = ReadDouble(buf + 16);
-    double h = ReadDouble(buf + 24);
-    return NSMakeRect(x, y, w, h);
+    CGFloat x = ReadDouble(buf);
+    CGFloat y = ReadDouble(buf + 8);
+    CGFloat w = ReadDouble(buf + 16);
+    CGFloat h = ReadDouble(buf + 24);
+    return CGRectMake(x, y, w, h);
 }
 
 int ReadInt(const char *buf)
@@ -49,7 +49,7 @@ int ReadInt(const char *buf)
 }
 
 @implementation GraphicsView {
-    NSImage *theImage;
+    CGContextRef theImage;
 }
 
 // - (void)awakeFromNib {
@@ -67,14 +67,18 @@ int ReadInt(const char *buf)
 //     [theImage unlockFocus];
 // }
 
-- (void)setImage:(NSImage *)image
+- (void)setImage:(CGContextRef)image
 {
     theImage = image;
 }
 
 - (void)drawRect:(NSRect)rect
 {
-    [theImage drawAtPoint:NSZeroPoint fromRect:rect operation:NSCompositeSourceOver fraction:1.0];
+    CGContextRef c = [NSGraphicsContext currentContext].CGContext;
+    CGImageRef img = CGBitmapContextCreateImage(theImage);
+    CGContextDrawImage(c, NSMakeRect(0,0,CGImageGetWidth(img), CGImageGetHeight(img)), img);
+//    [theImage drawAtPoint:NSZeroPoint fromRect:rect operation:NSCompositeSourceOver fraction:1.0];
+    CGImageRelease(img);
 }
 
 @end
@@ -91,70 +95,73 @@ int ReadInt(const char *buf)
     unsigned long len;
     unsigned int max;
 
-    NSFont *font;
-    NSColor *color;
-    NSImage *image;
+    CGContextRef bitmapContext;
 }
 
 
-- (void)setColor:(NSColor *)c {
-    color = c;
+- (void)setColor:(CGColorRef)c {
+    CGContextSetStrokeColorWithColor(bitmapContext, c);
+    CGContextSetFillColorWithColor(bitmapContext, c);
 }
 
-- (void)setFontName:(NSString *)fontName {
-    font = [NSFont fontWithName:fontName size:font.pointSize];
+- (void)setFontName:(CFStringRef)fontName {
+    CGFontRef font = CGFontCreateWithFontName(fontName);
+    CGContextSetFont(bitmapContext, font);
+    CGFontRelease(font);
 }
 
-- (void)setFontSize:(float)fontSize {
-    font = [NSFont fontWithName:font.fontName size:fontSize];
+- (void)setFontSize:(CGFloat)fontSize {
+    CGContextSetFontSize(bitmapContext, fontSize);
 }
 
-- (void)setDefaultLineWidth:(float)lineWidth {
-    [NSBezierPath setDefaultLineWidth:lineWidth];
+- (void)setDefaultLineWidth:(CGFloat)lineWidth {
+    CGContextSetLineWidth(bitmapContext, lineWidth);
 }
 
-- (void)strokeLineFromPoint:(NSPoint)from toPoint:(NSPoint)to {
-    [NSBezierPath strokeLineFromPoint:from toPoint:to];
+- (void)strokeLineFromPoint:(CGPoint)from toPoint:(CGPoint)to {
+    CGContextMoveToPoint(bitmapContext, from.x, from.y);
+    CGContextAddLineToPoint(bitmapContext, to.x, to.y);
+    CGContextStrokePath(bitmapContext);
 }
 
-- (void)strokeRect:(NSRect)rect {
-    [NSBezierPath strokeRect:rect];
+- (void)strokeRect:(CGRect)rect {
+    CGContextStrokeRect(bitmapContext, rect);
 }
 
-- (void)fillRect:(NSRect)rect {
-    [NSBezierPath fillRect:rect];
+- (void)fillRect:(CGRect)rect {
+    CGContextFillRect(bitmapContext, rect);
 }
 
-- (void)strokeOvalInRect:(NSRect)rect {
-    [[NSBezierPath bezierPathWithOvalInRect:rect] stroke];
+- (void)strokeOvalInRect:(CGRect)rect {
+    CGContextAddEllipseInRect(bitmapContext, rect);
+    CGContextStrokePath(bitmapContext);
 }
 
-- (void)fillOvalInRect:(NSRect)rect {
-    [[NSBezierPath bezierPathWithOvalInRect:rect] fill];
+- (void)fillOvalInRect:(CGRect)rect {
+    CGContextAddEllipseInRect(bitmapContext, rect);
+    CGContextFillPath(bitmapContext);
 }
 
-- (void)strokePoly:(NSPointArray)points count:(unsigned int)count {
-    NSBezierPath *path = [NSBezierPath bezierPath];
-    [path appendBezierPathWithPoints:points count:count];
-    [path stroke];
+- (void)strokePoly:(CGPoint *)points count:(size_t)count {
+    CGContextAddLines(bitmapContext, points, count);
+    CGContextStrokePath(bitmapContext);
 }
 
-- (void)drawString:(NSString *)string atPoint:(NSPoint)point {
-    [string drawAtPoint:point withAttributes:[NSDictionary dictionary]];
+- (void)drawString:(CFStringRef)string atPoint:(CGPoint)p {
+    CFAttributedStringRef attrStr = CFAttributedStringCreate(NULL, string, CFDictionaryCreate(NULL, NULL, NULL, 0, NULL, NULL));
+    CTLineRef line = CTLineCreateWithAttributedString(attrStr);
+    CGContextSetTextPosition(bitmapContext, p.x, p.y);
+    CTLineDraw(line, bitmapContext);
+    CFRelease(line);
 }
 
-- (void)strokeArcWithCenter:(NSPoint)c radius:(float)r startAngle:(float)a1 endAngle:(float)a2 {
-    NSBezierPath *path = [NSBezierPath bezierPath];
-    [path appendBezierPathWithArcWithCenter:c radius:r startAngle:a1 endAngle:a2];
-    [path stroke];
+- (void)strokeArcWithCenter:(CGPoint)c radius:(CGFloat)r startAngle:(CGFloat)a1 endAngle:(CGFloat)a2 {
+    CGContextAddArc(bitmapContext, c.x, c.y, r, a1, a2, 1);
+    CGContextStrokePath(bitmapContext);
 }
 
 - (void)processData {
     unsigned int off = 0;
-
-    [image lockFocus];
-    [color set];
-    [font set];
 
     while (off + 4 <= max) {
         unsigned int n = ReadInt(buf + off);
@@ -174,7 +181,7 @@ int ReadInt(const char *buf)
         case 2: { /* set color */
             // NSLog(@"set color\n");
             if (off + 4 + 8*4 > max) break;
-            NSColor *c = ReadColor(buf + off + 4);
+            CGColorRef c = ReadColor(buf + off + 4);
             off += 4 + 8*4;
             [self setColor:c];
             break;
@@ -182,8 +189,8 @@ int ReadInt(const char *buf)
         case 4: { /* stroke line */
             // NSLog(@"stroke line\n");
             if (off + 36 > max) break;
-            NSPoint p1 = ReadPoint(buf + off + 4);
-            NSPoint p2 = ReadPoint(buf + off + 20);
+            CGPoint p1 = ReadPoint(buf + off + 4);
+            CGPoint p2 = ReadPoint(buf + off + 20);
             off += 36;
             [self strokeLineFromPoint:p1 toPoint:p2];
             break;
@@ -191,7 +198,7 @@ int ReadInt(const char *buf)
         case 5: { /* stroke rect */
             // NSLog(@"stroke rect\n");
             if (off + 36 > max) break;
-            NSRect r = ReadRect(buf + off + 4);
+            CGRect r = ReadRect(buf + off + 4);
             off += 36;
             [self strokeRect:r];
             break;
@@ -199,7 +206,7 @@ int ReadInt(const char *buf)
         case 8: { /* fill rect */
             // NSLog(@"fill rect\n");
             if (off + 36 > max) break;
-            NSRect r = ReadRect(buf + off + 4);
+            CGRect r = ReadRect(buf + off + 4);
             off += 36;
             [self fillRect:r];
             break;
@@ -207,7 +214,7 @@ int ReadInt(const char *buf)
         case 6: { /* stroke oval */
             // NSLog(@"stroke oval\n");
             if (off + 36 > max) break;
-            NSRect r = ReadRect(buf + off + 4);
+            CGRect r = ReadRect(buf + off + 4);
             off += 36;
             [self strokeOvalInRect:r];
             break;
@@ -215,7 +222,7 @@ int ReadInt(const char *buf)
         case 7: { /* fill oval */
             // NSLog(@"fill oval\n");
             if (off + 36 > max) break;
-            NSRect r = ReadRect(buf + off + 4);
+            CGRect r = ReadRect(buf + off + 4);
             off += 36;
             [self fillOvalInRect:r];
             break;
@@ -225,7 +232,7 @@ int ReadInt(const char *buf)
             if (off + 8 > max) break;
             unsigned int count = ReadInt(buf + off + 4);
             if (off + 8 + 16*count > max) break;
-            NSPointArray a = calloc(count, sizeof(NSPoint));
+            CGPoint *a = calloc(count, sizeof(CGPoint));
             for (int i = 0; i < count; i ++) {
                 a[i] = ReadPoint(buf + off + 8 + 16*i);
             }
@@ -238,10 +245,10 @@ int ReadInt(const char *buf)
             if (off + 8 > max) break;
             int n = ReadInt(buf + off + 4);
             if (off + 8 + n > max) break;
-            NSString *fontName =
-                [[NSString alloc] initWithBytes:(buf + off + 8) length:n encoding:NSUTF8StringEncoding];
+            CFStringRef fontName = CFStringCreateWithBytes(NULL, (const unsigned char *)(buf + off + 8), n, kCFStringEncodingUTF8, false);
             off += 8 + n;
             [self setFontName:fontName];
+            CFRelease(fontName);
             break;
         }
         case 11: { /* set font size */
@@ -277,8 +284,6 @@ int ReadInt(const char *buf)
         }
     }
 
-    [image unlockFocus];
-
     if (off > 0) {
         self.window.contentView.needsDisplay = YES;
 
@@ -308,21 +313,20 @@ int ReadInt(const char *buf)
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
-    color = [NSColor blackColor];
-    font = [NSFont userFontOfSize:0.0];
+    CGColorSpaceRef colorSpace = CGColorSpaceCreateWithName(kCGColorSpaceGenericRGB);
+    bitmapContext =
+        CGBitmapContextCreate(NULL, 2 * self.window.frame.size.width, 2 * self.window.frame.size.height, 8, 0, colorSpace, kCGImageAlphaPremultipliedLast);
+    CGColorSpaceRelease(colorSpace);
 
-    [NSBezierPath setDefaultLineCapStyle:NSRoundLineCapStyle];
+    NSFont *font = [NSFont userFontOfSize:0.0];
+    [self setFontName:(__bridge CFStringRef)font.fontName];
+    [self setFontSize:font.pointSize];
+    CGContextSetLineCap(bitmapContext, kCGLineCapRound);
+    [self setColor:CGColorGetConstantColor(kCGColorWhite)];
+    CGContextFillRect(bitmapContext, CGRectInfinite);
+    [self setColor:CGColorGetConstantColor(kCGColorBlack)];
 
-    image =
-        [[NSImage alloc]
-                initWithSize:NSMakeSize(2 * self.window.frame.size.width, 2 * self.window.frame.size.height)];
-
-    [image lockFocus];
-    [[NSColor whiteColor] set];
-    [NSBezierPath fillRect:NSMakeRect(0.0, 0.0, image.size.width, image.size.height)];
-    [image unlockFocus];
-
-    [self.window.contentView setImage:image];
+    [self.window.contentView setImage:bitmapContext];
 
     standardInput = [NSFileHandle fileHandleWithStandardInput];
     buf = malloc (1024 * 128);

@@ -52,21 +52,6 @@ int ReadInt(const char *buf)
     CGContextRef theImage;
 }
 
-// - (void)awakeFromNib {
-//     // NSLog (@"awakeFromNib\n");
-//     color = [NSColor blackColor];
-//     font = [NSFont userFontOfSize: 0.0];
-//     NSSize size = NSMakeSize (2 * self.frame.size.width, 2 * self.frame.size.height);
-
-//     [NSBezierPath setDefaultLineCapStyle:NSRoundLineCapStyle];
-
-//     theImage = [[NSImage alloc] initWithSize: size];
-//     [theImage lockFocus];
-//     [[NSColor whiteColor] set];
-//     [NSBezierPath fillRect:NSMakeRect(0.0, 0.0, theImage.size.width, theImage.size.height)];
-//     [theImage unlockFocus];
-// }
-
 - (void)setImage:(CGContextRef)image
 {
     theImage = image;
@@ -76,8 +61,7 @@ int ReadInt(const char *buf)
 {
     CGContextRef c = [NSGraphicsContext currentContext].CGContext;
     CGImageRef img = CGBitmapContextCreateImage(theImage);
-    CGContextDrawImage(c, NSMakeRect(0,0,CGImageGetWidth(img), CGImageGetHeight(img)), img);
-//    [theImage drawAtPoint:NSZeroPoint fromRect:rect operation:NSCompositeSourceOver fraction:1.0];
+    CGContextDrawImage(c, [self convertRectFromBacking:CGRectMake(0, 0, CGImageGetWidth(img), CGImageGetHeight(img))], img);
     CGImageRelease(img);
 }
 
@@ -97,7 +81,6 @@ int ReadInt(const char *buf)
 
     CGContextRef bitmapContext;
 }
-
 
 - (void)setColor:(CGColorRef)c {
     CGContextSetStrokeColorWithColor(bitmapContext, c);
@@ -314,8 +297,8 @@ int ReadInt(const char *buf)
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
     CGColorSpaceRef colorSpace = CGColorSpaceCreateWithName(kCGColorSpaceGenericRGB);
-    bitmapContext =
-        CGBitmapContextCreate(NULL, 2 * self.window.frame.size.width, 2 * self.window.frame.size.height, 8, 0, colorSpace, kCGImageAlphaPremultipliedLast);
+    bitmapContext = CGBitmapContextCreate(NULL, 2 * self.window.frame.size.width, 2 * self.window.frame.size.height, 8, 0, colorSpace, kCGImageAlphaPremultipliedLast);
+    CGContextScaleCTM(bitmapContext, 2.0, 2.0);
     CGColorSpaceRelease(colorSpace);
 
     NSFont *font = [NSFont userFontOfSize:0.0];
@@ -325,6 +308,7 @@ int ReadInt(const char *buf)
     [self setColor:CGColorGetConstantColor(kCGColorWhite)];
     CGContextFillRect(bitmapContext, CGRectInfinite);
     [self setColor:CGColorGetConstantColor(kCGColorBlack)];
+    [self drawString:CFSTR("Hello, World") atPoint:CGPointMake(10,10)];
 
     [self.window.contentView setImage:bitmapContext];
 

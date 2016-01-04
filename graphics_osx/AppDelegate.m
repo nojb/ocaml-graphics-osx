@@ -311,8 +311,8 @@ int ReadInt(const char *buf)
     [self setFontName:(__bridge CFStringRef)font.fontName];
     [self setFontSize:font.pointSize];
     CGContextSetLineCap(bitmapContext, kCGLineCapRound);
-    [self setColor:CGColorGetConstantColor(kCGColorWhite)];
-    CGContextFillRect(bitmapContext, CGRectInfinite);
+    // [self setColor:CGColorGetConstantColor(kCGColorWhite)];
+    // CGContextFillRect(bitmapContext, CGRectInfinite);
     [self setColor:CGColorGetConstantColor(kCGColorBlack)];
     [self drawString:CFSTR("Hello, World") atPoint:CGPointMake(10,10)];
 
@@ -321,6 +321,25 @@ int ReadInt(const char *buf)
     scrollView.hasHorizontalScroller = YES;
     scrollView.borderType = NSNoBorder;
     scrollView.autoresizingMask = (NSViewWidthSizable | NSViewHeightSizable);
+
+    NSLayoutConstraint *c1 =
+        [NSLayoutConstraint constraintWithItem:scrollView
+                                     attribute:NSLayoutAttributeWidth
+                                     relatedBy:NSLayoutRelationLessThanOrEqual
+                                        toItem:nil
+                                     attribute:NSLayoutAttributeNotAnAttribute
+                                    multiplier:0.0
+                                      constant:400];
+    c1.active = YES;
+    NSLayoutConstraint *c2 =
+    [NSLayoutConstraint constraintWithItem:scrollView
+                                 attribute:NSLayoutAttributeHeight
+                                 relatedBy:NSLayoutRelationLessThanOrEqual
+                                    toItem:nil
+                                 attribute:NSLayoutAttributeNotAnAttribute
+                                multiplier:0.0
+                                  constant:400];
+    c2.active = YES;
 
     [scrollView setDocumentView: [[GraphicsView alloc] initWithBitmapContext:bitmapContext]];
     [self.window setContentView:scrollView];

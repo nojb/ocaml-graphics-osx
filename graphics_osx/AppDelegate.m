@@ -274,7 +274,7 @@ int ReadInt(const char *buf)
     }
 
     if (off > 0) {
-        self.window.contentView.needsDisplay = YES;
+        [[self.window.contentView documentView] setNeedsDisplay:YES];
 
         if (off < max) {
             memmove(buf, buf + off, max - off);

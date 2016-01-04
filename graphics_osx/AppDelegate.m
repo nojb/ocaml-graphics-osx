@@ -56,8 +56,9 @@ int ReadInt(const char *buf)
     CGContextRef bitmapContext;
 }
 
-- (void)setBitmapContext:(CGContextRef)c {
+- (instancetype)initWithBitmapContext:(CGContextRef)c {
     bitmapContext = c;
+    return [super initWithFrame:NSMakeRect(0,0,400,400)];
 }
 
 - (void)drawRect:(NSRect)rect
@@ -148,16 +149,17 @@ int ReadInt(const char *buf)
 
 - (void)processData {
     unsigned int off = 0;
+    BOOL done = NO;
 
-    while (off + 4 <= max) {
+    while (off + 4 <= max && !done) {
         unsigned int n = ReadInt(buf + off);
         // NSLog(@"Kind: %d (off=%d, max=%d, len=%ld)\n", n, off, max, len);
         switch (n) {
         case 0: { /* set title */
             // NSLog(@"set title\n");
-            if (off + 8 > max) break;
+            if (off + 8 > max) { done = YES; break; }
             unsigned int title_len = ReadInt(buf + off + 4);
-            if (off + 8 + title_len > max) break;
+            if (off + 8 + title_len > max) { done = YES; break; }
             NSString *title =
                 [[NSString alloc] initWithBytes:(buf + off + 8) length:title_len encoding:NSUTF8StringEncoding];
             off += 8 + title_len;
@@ -166,7 +168,7 @@ int ReadInt(const char *buf)
         }
         case 2: { /* set color */
             // NSLog(@"set color\n");
-            if (off + 4 + 8*4 > max) break;
+            if (off + 4 + 8*4 > max) { done = YES; break; }
             CGColorRef c = ReadColor(buf + off + 4);
             off += 4 + 8*4;
             [self setColor:c];
@@ -174,7 +176,7 @@ int ReadInt(const char *buf)
         }
         case 4: { /* stroke line */
             // NSLog(@"stroke line\n");
-            if (off + 36 > max) break;
+            if (off + 36 > max) { done = YES; break; }
             CGPoint p1 = ReadPoint(buf + off + 4);
             CGPoint p2 = ReadPoint(buf + off + 20);
             off += 36;
@@ -183,7 +185,7 @@ int ReadInt(const char *buf)
         }
         case 5: { /* stroke rect */
             // NSLog(@"stroke rect\n");
-            if (off + 36 > max) break;
+            if (off + 36 > max) { done = YES; break; }
             CGRect r = ReadRect(buf + off + 4);
             off += 36;
             [self strokeRect:r];
@@ -191,7 +193,7 @@ int ReadInt(const char *buf)
         }
         case 8: { /* fill rect */
             // NSLog(@"fill rect\n");
-            if (off + 36 > max) break;
+            if (off + 36 > max) { done = YES; break; }
             CGRect r = ReadRect(buf + off + 4);
             off += 36;
             [self fillRect:r];
@@ -199,7 +201,7 @@ int ReadInt(const char *buf)
         }
         case 6: { /* stroke oval */
             // NSLog(@"stroke oval\n");
-            if (off + 36 > max) break;
+            if (off + 36 > max) { done = YES; break; }
             CGRect r = ReadRect(buf + off + 4);
             off += 36;
             [self strokeOvalInRect:r];
@@ -207,7 +209,7 @@ int ReadInt(const char *buf)
         }
         case 7: { /* fill oval */
             // NSLog(@"fill oval\n");
-            if (off + 36 > max) break;
+            if (off + 36 > max) { done = YES; break; }
             CGRect r = ReadRect(buf + off + 4);
             off += 36;
             [self fillOvalInRect:r];
@@ -215,9 +217,9 @@ int ReadInt(const char *buf)
         }
         case 9: { /* stroke poly */
             // NSLog(@"stroke poly\n");
-            if (off + 8 > max) break;
+            if (off + 8 > max) { done = YES; break; }
             unsigned int count = ReadInt(buf + off + 4);
-            if (off + 8 + 16*count > max) break;
+            if (off + 8 + 16*count > max) { done = YES; break; }
             CGPoint *a = calloc(count, sizeof(CGPoint));
             for (int i = 0; i < count; i ++) {
                 a[i] = ReadPoint(buf + off + 8 + 16*i);
@@ -228,9 +230,9 @@ int ReadInt(const char *buf)
         }
         case 10: { /* set font name */
             // NSLog(@"set font name\n");
-            if (off + 8 > max) break;
+            if (off + 8 > max) { done = YES; break; }
             int n = ReadInt(buf + off + 4);
-            if (off + 8 + n > max) break;
+            if (off + 8 + n > max) { done = YES; break; }
             CFStringRef fontName = CFStringCreateWithBytes(NULL, (const unsigned char *)(buf + off + 8), n, kCFStringEncodingUTF8, false);
             off += 8 + n;
             [self setFontName:fontName];
@@ -239,7 +241,7 @@ int ReadInt(const char *buf)
         }
         case 11: { /* set font size */
             // NSLog(@"set font size");
-            if (off + 12 > max) break;
+            if (off + 12 > max) { done = YES; break; }
             CGFloat size = ReadDouble(buf + off + 4);
             off += 12;
             [self setFontSize:size];
@@ -247,7 +249,7 @@ int ReadInt(const char *buf)
         }
         case 12: { /* set line width */
             // NSLog(@"set line width");
-            if (off + 12 > max) break;
+            if (off + 12 > max) { done = YES; break; }
             CGFloat size = ReadDouble(buf + off + 4);
             off += 12;
             [self setDefaultLineWidth:size];
@@ -255,7 +257,7 @@ int ReadInt(const char *buf)
         }
         case 13: { /* stroke arc */
             // NSLog(@"stroke arc");
-            if (off + 4 + 8*5 > max) break;
+            if (off + 4 + 8*5 > max) { done = YES; break; }
             NSPoint c = ReadPoint(buf + 4);
             CGFloat r = ReadDouble(buf + 20);
             CGFloat a1 = ReadDouble(buf + 28);
@@ -266,6 +268,7 @@ int ReadInt(const char *buf)
         }
         default:
             NSLog(@"Unrecognized kind: %d\n", n);
+            done = YES;
             break;
         }
     }
@@ -313,7 +316,14 @@ int ReadInt(const char *buf)
     [self setColor:CGColorGetConstantColor(kCGColorBlack)];
     [self drawString:CFSTR("Hello, World") atPoint:CGPointMake(10,10)];
 
-    [self.window.contentView setBitmapContext:bitmapContext];
+    NSScrollView *scrollView = [[NSScrollView alloc] initWithFrame:self.window.contentView.frame];
+    scrollView.hasVerticalScroller = YES;
+    scrollView.hasHorizontalScroller = YES;
+    scrollView.borderType = NSNoBorder;
+    scrollView.autoresizingMask = (NSViewWidthSizable | NSViewHeightSizable);
+
+    [scrollView setDocumentView: [[GraphicsView alloc] initWithBitmapContext:bitmapContext]];
+    [self.window setContentView:scrollView];
 
     standardInput = [NSFileHandle fileHandleWithStandardInput];
     buf = malloc (1024 * 128);

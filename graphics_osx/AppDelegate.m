@@ -48,6 +48,34 @@ int ReadInt(const char *buf)
     return NSSwapBigIntToHost(n);
 }
 
+@interface MyClipView : NSClipView
+
+@end
+
+CGFloat CenterCoordinate(CGFloat proposedDim, CGFloat docDim)
+{
+    CGFloat result = floor((proposedDim - docDim) / -2.0f);
+    return result;
+}
+
+@implementation MyClipView
+
+- (NSRect)constrainBoundsRect:(NSRect)proposedRect {
+    NSRect constrainedRect = [super constrainBoundsRect:proposedRect];
+    NSRect documentRect = [self.documentView frame];
+
+    if (proposedRect.size.width >= documentRect.size.width)
+        constrainedRect.origin.x = CenterCoordinate(proposedRect.size.width, documentRect.size.width);
+
+    if (proposedRect.size.height >= documentRect.size.height)
+        constrainedRect.origin.y = CenterCoordinate(proposedRect.size.height, documentRect.size.height);
+
+    return constrainedRect;
+}
+
+
+@end
+
 @interface GraphicsView : NSView
 
 @end
@@ -58,11 +86,15 @@ int ReadInt(const char *buf)
 
 - (instancetype)initWithBitmapContext:(CGContextRef)c {
     bitmapContext = c;
-    return [super initWithFrame:NSMakeRect(0,0,400,400)];
+    size_t w = CGBitmapContextGetWidth(c);
+    size_t h = CGBitmapContextGetHeight(c);
+    return [super initWithFrame:[[NSScreen mainScreen] convertRectFromBacking:NSMakeRect(0, 0, w, h)]];
 }
 
 - (void)drawRect:(NSRect)rect
 {
+    [[NSColor redColor] set];
+    NSRectFill(rect);
     CGContextRef c = [NSGraphicsContext currentContext].CGContext;
     CGImageRef img = CGBitmapContextCreateImage(bitmapContext);
     CGContextDrawImage(c, [self convertRectFromBacking:CGRectMake(0, 0, CGImageGetWidth(img), CGImageGetHeight(img))], img);
@@ -303,8 +335,9 @@ int ReadInt(const char *buf)
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
     CGColorSpaceRef colorSpace = CGColorSpaceCreateWithName(kCGColorSpaceGenericRGB);
-    bitmapContext = CGBitmapContextCreate(NULL, 2 * self.window.frame.size.width, 2 * self.window.frame.size.height, 8, 0, colorSpace, kCGImageAlphaPremultipliedLast);
-    CGContextScaleCTM(bitmapContext, 2.0, 2.0);
+    CGFloat scale = [[NSScreen mainScreen] backingScaleFactor];
+    bitmapContext = CGBitmapContextCreate(NULL, scale * self.window.contentView.frame.size.width, scale * self.window.contentView.frame.size.height, 8, 0, colorSpace, kCGImageAlphaPremultipliedLast);
+    CGContextScaleCTM(bitmapContext, scale, scale);
     CGColorSpaceRelease(colorSpace);
 
     NSFont *font = [NSFont userFontOfSize:0.0];
@@ -317,29 +350,16 @@ int ReadInt(const char *buf)
     [self drawString:CFSTR("Hello, World") atPoint:CGPointMake(10,10)];
 
     NSScrollView *scrollView = [[NSScrollView alloc] initWithFrame:self.window.contentView.frame];
+    [scrollView setContentView:[[MyClipView alloc] init]];
     scrollView.hasVerticalScroller = YES;
     scrollView.hasHorizontalScroller = YES;
     scrollView.borderType = NSNoBorder;
-    scrollView.autoresizingMask = (NSViewWidthSizable | NSViewHeightSizable);
+    scrollView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+    scrollView.horizontalScrollElasticity = NSScrollElasticityAllowed;
+//    scrollView.drawsBackground = NO;
 
-    NSLayoutConstraint *c1 =
-        [NSLayoutConstraint constraintWithItem:scrollView
-                                     attribute:NSLayoutAttributeWidth
-                                     relatedBy:NSLayoutRelationLessThanOrEqual
-                                        toItem:nil
-                                     attribute:NSLayoutAttributeNotAnAttribute
-                                    multiplier:0.0
-                                      constant:400];
-    c1.active = YES;
-    NSLayoutConstraint *c2 =
-    [NSLayoutConstraint constraintWithItem:scrollView
-                                 attribute:NSLayoutAttributeHeight
-                                 relatedBy:NSLayoutRelationLessThanOrEqual
-                                    toItem:nil
-                                 attribute:NSLayoutAttributeNotAnAttribute
-                                multiplier:0.0
-                                  constant:400];
-    c2.active = YES;
+//    [[scrollView widthAnchor] constraintLessThanOrEqualToConstant:400].active = YES;
+//    [[scrollView heightAnchor] constraintLessThanOrEqualToConstant:400].active = YES;
 
     [scrollView setDocumentView: [[GraphicsView alloc] initWithBitmapContext:bitmapContext]];
     [self.window setContentView:scrollView];

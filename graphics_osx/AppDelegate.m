@@ -93,8 +93,7 @@ CGFloat CenterCoordinate(CGFloat proposedDim, CGFloat docDim)
 
 - (void)drawRect:(NSRect)rect
 {
-    [[NSColor redColor] set];
-    NSRectFill(rect);
+    NSFrameRect([self frame]);
     CGContextRef c = [NSGraphicsContext currentContext].CGContext;
     CGImageRef img = CGBitmapContextCreateImage(bitmapContext);
     CGContextDrawImage(c, [self convertRectFromBacking:CGRectMake(0, 0, CGImageGetWidth(img), CGImageGetHeight(img))], img);
@@ -334,9 +333,17 @@ CGFloat CenterCoordinate(CGFloat proposedDim, CGFloat docDim)
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
+    NSUserDefaults *standardDefaults = [NSUserDefaults standardUserDefaults];
+
+    NSInteger bitmapWidth = [standardDefaults integerForKey:@"width"];
+    NSInteger bitmapHeight = [standardDefaults integerForKey:@"height"];
+
+    if (!bitmapWidth) bitmapWidth = 600;
+    if (!bitmapHeight) bitmapHeight = 600;
+
     CGColorSpaceRef colorSpace = CGColorSpaceCreateWithName(kCGColorSpaceGenericRGB);
     CGFloat scale = [[NSScreen mainScreen] backingScaleFactor];
-    bitmapContext = CGBitmapContextCreate(NULL, scale * self.window.contentView.frame.size.width, scale * self.window.contentView.frame.size.height, 8, 0, colorSpace, kCGImageAlphaPremultipliedLast);
+    bitmapContext = CGBitmapContextCreate(NULL, scale * bitmapWidth, scale * bitmapHeight, 8, 0, colorSpace, kCGImageAlphaPremultipliedLast);
     CGContextScaleCTM(bitmapContext, scale, scale);
     CGColorSpaceRelease(colorSpace);
 
@@ -356,7 +363,7 @@ CGFloat CenterCoordinate(CGFloat proposedDim, CGFloat docDim)
     scrollView.borderType = NSNoBorder;
     scrollView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
     scrollView.horizontalScrollElasticity = NSScrollElasticityAllowed;
-//    scrollView.drawsBackground = NO;
+    //    scrollView.drawsBackground = NO;
 
 //    [[scrollView widthAnchor] constraintLessThanOrEqualToConstant:400].active = YES;
 //    [[scrollView heightAnchor] constraintLessThanOrEqualToConstant:400].active = YES;

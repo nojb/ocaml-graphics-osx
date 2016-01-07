@@ -5,3 +5,4 @@ xcuserdata
 _build
 *.byte
 DerivedData
+graphics_server

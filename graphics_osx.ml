@@ -2,7 +2,7 @@ let out_ref = ref None
 
 let open_graph _ =
   let inp, out, err =
-    Unix.open_process_full "graphics_osx.app/Contents/MacOS/graphics_osx" [|"graphics_osx"|]
+    Unix.open_process_full "graphics_server" [|"graphics_server"|]
   in
   out_ref := Some out
 

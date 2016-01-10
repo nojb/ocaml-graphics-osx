@@ -6,3 +6,6 @@ _build
 *.byte
 DerivedData
 graphics_server
+*.cm*
+*.o
+test

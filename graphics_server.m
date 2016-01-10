@@ -7,7 +7,8 @@
 
 @implementation MyClipView
 
-- (NSRect)constrainBoundsRect:(NSRect)proposedRect {
+- (NSRect)constrainBoundsRect:(NSRect)proposedRect
+{
     NSRect docRect = [self.documentView frame];
     NSRect rect = [super constrainBoundsRect:proposedRect];
 
@@ -26,7 +27,8 @@
 
 @end
 
-@implementation GraphicsView {
+@implementation GraphicsView
+{
     CGContextRef bitmapContext;
 }
 
@@ -64,6 +66,7 @@
 - (void)strokePoly:(NSArray *)points;
 - (void)drawString:(NSString *)string atPoint:(NSPoint)p;
 - (void)strokeArcWithCenter:(NSPoint)c radius:(CGFloat)r startAngle:(CGFloat)a1 endAngle:(CGFloat)a2;
+- (void)setNeedsDisplay:(BOOL)needsDisplay;
 
 @end
 
@@ -73,7 +76,8 @@
 
 @end
 
-@implementation GraphicsServer {
+@implementation GraphicsServer
+{
     CGContextRef bitmapContext;
 }
 
@@ -194,9 +198,18 @@
     CFRelease(line);
 }
 
-- (void)strokeArcWithCenter:(CGPoint)c radius:(CGFloat)r startAngle:(CGFloat)a1 endAngle:(CGFloat)a2 {
+- (void)strokeArcWithCenter:(CGPoint)c
+                     radius:(CGFloat)r
+                 startAngle:(CGFloat)a1
+                   endAngle:(CGFloat)a2
+{
     CGContextAddArc(bitmapContext, c.x, c.y, r, a1, a2, 1);
     CGContextStrokePath(bitmapContext);
+}
+
+- (void)setNeedsDisplay:(BOOL)needsDisplay
+{
+    [[self.window.contentView documentView] setNeedsDisplay:needsDisplay];
 }
 
 @end

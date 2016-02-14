@@ -1,8 +1,8 @@
 STDLIB=`ocamlfind printconf stdlib`
 
-all: test graphics_server
+all: test
 
-test: client.o test.o
+test: client.o test.o graphics_server.o
 	clang -framework cocoa -L$(STDLIB) -lasmrun $^ -o $@
 
 test.o: test.ml
@@ -11,8 +11,8 @@ test.o: test.ml
 client.o: client.m
 	clang -fmodules -fobjc-arc -I$(STDLIB) -c $< -o $@
 
-graphics_server: graphics_server.m
-	clang -framework cocoa -fmodules -fobjc-arc $^ -o $@
+graphics_server.o: graphics_server.m
+	clang -fmodules -fobjc-arc -c $^ -o $@
 
 clean:
 	rm -f graphics_server client.o test.cm* test.o

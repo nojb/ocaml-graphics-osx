@@ -214,11 +214,11 @@
 
 @end
 
-int main ()
+int run_server (void *arg)
 {
     @autoreleasepool {
         [NSApplication sharedApplication];
-        [NSApp setActivationPolicy:NSApplicationActivationPolicyAccessory];
+        [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
 
         // NSUserDefaults *standardDefaults = [NSUserDefaults standardUserDefaults];
 

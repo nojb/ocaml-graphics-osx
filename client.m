@@ -48,6 +48,26 @@ void caml_set_title(value title)
     CAMLreturn0;
 }
 
+extern void run_server(void*);
+extern int caml_startup(const char **);
+
+void* run_ocaml(void *argv)
+{
+    caml_startup(argv);
+    return NULL;
+}
+
+#include <pthread.h>
+
+int main(int argc, const char **argv)
+{
+    NSLog(@"Hello, World!");
+    pthread_t t;
+    assert (pthread_create(&t, NULL, run_ocaml, argv) == 0);
+    run_server (NULL);
+    return 0;
+}
+
 // int main (int argc, const char * argv[])
 // {
 //     @autoreleasepool {
